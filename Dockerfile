@@ -1,5 +1,4 @@
-FROM alpine:3.8
-MAINTAINER Matthias Langbein <matthias@movio.co>
+FROM alpine:3.8 AS build
 
 # install qt build packages #
 RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories \
@@ -86,3 +85,26 @@ RUN	cd /tmp/wkhtmltopdf/qt && \
 # remove qt build packages #
 RUN apk del .deps \
 	&& rm -rf /var/cache/apk/*
+
+FROM alpine:3.9
+
+RUN apk --update --no-cache add \
+    libgcc \
+    libstdc++ \
+    musl \
+    qt5-qtbase \
+    qt5-qtbase-x11 \
+    qt5-qtsvg \
+    qt5-qtwebkit \
+    ttf-freefont \
+    ttf-dejavu \
+    ttf-droid \
+    ttf-liberation \
+    ttf-ubuntu-font-family \
+    fontconfig
+
+# Add openssl dependencies for wkhtmltopdf
+RUN echo 'http://dl-cdn.alpinelinux.org/alpine/v3.8/main' >> /etc/apk/repositories && \
+    apk add --no-cache libcrypto1.0 libssl1.0
+
+COPY --from=build /bin/wkhtmltopdf /bin/wkhtmltopdf

@@ -3,33 +3,40 @@
 Based on [alloylab/Docker-Alpine-wkhtmltopdf](https://github.com/alloylab/Docker-Alpine-wkhtmltopdf)
 
 Alpine has wkhtmltopdf package but with unpatched qt, therefor not all wkhtmltopdf features can be used. 
-
 This container builds wkhtmltopdf and patched qt.
 
-Build step (Alpine 3.8):
+Build step (Alpine 3.9):
 
-```
+```sh
 # build the binary
-docker build -t movio/wkhtmltopdf:latest .
-# create a container
-docker run --name wkhtmltopdf -it movio/wkhtmltopdf:latest pwd
-# extract binary from container to host
-docker cp wkhtmltopdf:/bin/wkhtmltopdf ./wkhtmltopdf
+docker build -t docker-alpine-wkhtmltopdf-patched-qt .
 ```
 
 Usage (Alpine 3.9):
 
-```
-# install unpatched wkhtmltopdf via package manager to get all dependencies, and add some true type fonts
-RUN apk add --no-cache \
-    wkhtmltopdf=0.12.5-r0 \
-    ttf-dejavu ttf-droid ttf-freefont ttf-liberation ttf-ubuntu-font-family
+```Dockerfile
+FROM docker-alpine-wkhtmltopdf-patched-qt:latest as wkhtmltopdf
+FROM alpine:3.9
 
-# patch the binary
-COPY wkhtmltopdf /usr/bin/wkhtmltopdf
+RUN apk --update --no-cache add \
+    libgcc \
+    libstdc++ \
+    musl \
+    qt5-qtbase \
+    qt5-qtbase-x11 \
+    qt5-qtsvg \
+    qt5-qtwebkit \
+    ttf-freefont \
+    ttf-dejavu \
+    ttf-droid \
+    ttf-liberation \
+    ttf-ubuntu-font-family \
+    fontconfig
 
-# add openssl dependencies
+# Add openssl dependencies for wkhtmltopdf
 RUN echo 'http://dl-cdn.alpinelinux.org/alpine/v3.8/main' >> /etc/apk/repositories && \
-    apk add --no-cache libcrypto1.0 libssl1.0 && \
-    /usr/bin/wkhtmltopdf --version
+    apk add --no-cache libcrypto1.0 libssl1.0
+
+# Add wkhtmltopdf
+COPY --from=wkhtmltopdf /bin/wkhtmltopdf /bin/wkhtmltopdf
 ```
